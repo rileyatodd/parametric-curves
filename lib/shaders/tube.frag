@@ -28,7 +28,7 @@ void main () {
   diffuse += rim * 2.0;
 
   // we'll animate in the new color from the center point
-  float distFromCenter = clamp(length(vViewPosition) / 5.0, 0.0, 1.0);
+  // float distFromCenter = clamp(length(vViewPosition) / 5.0, 0.0, 1.0);
   float edge = 0.05;
   float t = animateRadius;
   vec3 curColor = mix(color, #fff, smoothstep(t - edge, t + edge, vUv.y) * animateStrength);

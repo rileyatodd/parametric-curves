@@ -47,8 +47,50 @@ vec3 spherical (float r, float phi, float theta) {
 //   return vec3(x, y, 0.0);
 // }
 
-// Creates an animated torus knot
+float round(float x) {
+  return floor(.5+x);
+}
+
+vec3 sample_ngon (int sides, float t) {
+  float a = t*2.*PI;
+  float b = 2.*PI/float(sides);
+  float angle_diff = round(a/b)*b-a;
+  float r = .3/cos(angle_diff);
+  return spherical(r, 0., a+PI*1.5);  
+}
+
 vec3 sample (float t) {
+  vec3 triangle = sample_ngon(3, t);
+
+  float nextT = t + (1.0 / lengthSegments);
+  vec3 next = sample_ngon(3, nextT);
+  
+  // compute the TBN matrix
+  vec3 T = normalize(next - triangle);
+  vec3 B = normalize(cross(T, next + triangle));
+  vec3 N = -normalize(cross(B, T));
+
+  float turns_per_side = 3.;
+
+  float d = t*6.*PI*turns_per_side + index*2.*PI; // distance along helix axis
+
+  float a = t*2.*PI;
+  float b = 2.*PI/3.;
+  float angle_diff = round(a/b)*b-a;
+  float max_angle_diff = 2.*PI/6.;
+  float R = .05*cos(angle_diff); // helix radius
+
+  float circX = cos(d);
+  float circY = sin(d);
+
+  vec3 offset = vec3(R*cos(d), R*sin(d), t + index);
+  offset.xyz = B*R*circX + N*R*circY;
+
+  return triangle + offset;
+}
+
+// Creates an animated torus knot
+vec3 torus_sample (float t) {
   float beta = t * PI;
   
   float ripple = ease(sin(t * 2.0 * PI + time) * 0.5 + 0.5) * 0.5;
@@ -190,15 +232,16 @@ void createTube (float t, vec2 volume, out vec3 offset, out vec3 normal) {
 void main() {
   // current position to sample at
   // [-0.5 .. 0.5] to [0.0 .. 1.0]
-  float t = (position * 2.0) * 0.5 + 0.5;
+  float t = position + 0.5;
 
   // build our tube geometry
-  vec2 volume = vec2(thickness);
+  vec2 volume = vec2(thickness*.5);
 
   // animate the per-vertex curve thickness
-  float volumeAngle = t * lengthSegments * 0.5 + index * 20.0 + time * 2.5;
+  float volumeAngle = t * 2.*PI*3. + index * 2.0;
   float volumeMod = sin(volumeAngle) * 0.5 + 0.5;
-  volume += 0.01 * volumeMod;
+  volume += 0.003 * volumeMod;
+  // volume *= volumeMod;
 
   // build our geometry
   vec3 transformed;
