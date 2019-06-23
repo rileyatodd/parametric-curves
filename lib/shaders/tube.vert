@@ -80,11 +80,9 @@ vec3 sample (float t) {
   float max_angle_diff = 2.*PI/6.;
   float R = .05*cos(angle_diff); // helix radius
 
-  float circX = cos(d);
-  float circY = sin(d);
-
-  vec3 offset = vec3(R*cos(d), R*sin(d), t + index);
-  offset.xyz = B*R*circX + N*R*circY;
+  float circX = cos(d + time);
+  float circY = sin(d + time);
+  vec3 offset = B*R*circX + N*R*circY;
 
   return triangle + offset;
 }
