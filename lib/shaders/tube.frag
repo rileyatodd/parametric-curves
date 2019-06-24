@@ -1,6 +1,7 @@
 #extension GL_OES_standard_derivatives : enable
 precision highp float;
 
+varying float vPosition;
 varying vec3 vNormal;
 varying vec2 vUv;
 varying vec3 vViewPosition;
@@ -31,7 +32,8 @@ void main () {
   // float distFromCenter = clamp(length(vViewPosition) / 5.0, 0.0, 1.0);
   float edge = 0.05;
   float t = animateRadius;
-  vec3 curColor = mix(color, #fff, smoothstep(t - edge, t + edge, vUv.y) * animateStrength);
+  // vec3 curColor = mix(color, #fff, smoothstep(t - edge, t + edge, vUv.y) * animateStrength);
+  vec3 curColor = mix(color, #fff, smoothstep(t - edge, t + edge, abs(vPosition-.5)) * animateStrength);
 
   // final color
   gl_FragColor = vec4(diffuse * curColor, 1.0);

@@ -17,6 +17,7 @@ uniform float index;
 uniform float radialSegments;
 
 // pass a few things along to the vertex shader
+varying float vPosition;
 varying vec2 vUv;
 varying vec3 vViewPosition;
 varying vec3 vNormal;
@@ -59,7 +60,55 @@ vec3 sample_ngon (int sides, float t) {
   return spherical(r, 0., a+PI*1.5);  
 }
 
+vec2 sample_triangle (vec2 A, vec2 B, vec2 C, float t) {
+  vec2 V = B-A;
+  vec2 U = C-B;
+  vec2 W = C-A;
+  float lenV = length(V);
+  float lenU = length(U);
+  float lenW = length(W);
+
+  t = t*(lenU+lenV+lenW);
+
+  float ab_step = 1.-step(lenV, t);
+  float bc_step = step(lenV, t)*(1.-step(lenV+lenU, t));
+  float ca_step = step(lenV+lenU, t);
+
+  float w = bc_step * (t-lenV)/lenU + ca_step * (1.-(t-lenV-lenU)/lenW);
+  float v = ab_step * t/lenV + bc_step * (1.-w);
+
+  return A + v*V + w*W;
+}
+
 vec3 sample (float t) {
+  vec2 X = vec2(0., .5);
+  vec2 Y = vec2(.5, -.25);
+  vec2 Z = vec2(-.5, -.25);
+
+  vec3 current = vec3(sample_triangle(X,Y,Z,t), 0.);
+
+  float nextT = t + (1.0 / lengthSegments);
+  vec3 next = vec3(sample_triangle(X,Y,Z,nextT), 0.);
+  
+  // compute the TBN matrix
+  vec3 T = normalize(next - current);
+  vec3 B = normalize(cross(T, next + current));
+  vec3 N = -normalize(cross(B, T));
+
+  float turns_per_side = 3.;
+
+  float d = t*6.*PI*turns_per_side + index*2.*PI; // distance along helix axis
+  float distanceFromNearestPoint = min(min(length(current.xy - X), length(current.xy - Y)), length(current.xy - Z));
+  float R = .0001+.05*sin(distanceFromNearestPoint); // helix radius
+
+  float circX = cos(d + time);
+  float circY = sin(d + time);
+  vec3 offset = B*R*circX + N*R*circY;
+
+  return current + offset;
+}
+
+vec3 ngon_triange_sample (float t) {
   vec3 triangle = sample_ngon(3, t);
 
   float nextT = t + (1.0 / lengthSegments);
@@ -231,6 +280,7 @@ void main() {
   // current position to sample at
   // [-0.5 .. 0.5] to [0.0 .. 1.0]
   float t = position + 0.5;
+  vPosition = t;
 
   // build our tube geometry
   vec2 volume = vec2(thickness*.5);
